@@ -1,70 +1,76 @@
 import os
-from typing import Generator
-
 import pytest
-
-from src.file_saver import JSONSaver
+from typing import Generator
 from src.vacancy import Vacancy
-
-TEST_FILE = "tests/test_vacancies.json"
-
-
-@pytest.fixture(autouse=True)
-def cleanup() -> Generator[None, None, None]:
-    """
-    Удаляет тестовый файл до и после каждого теста.
-    """
-    if os.path.exists(TEST_FILE):
-        os.remove(TEST_FILE)
-    yield
-    if os.path.exists(TEST_FILE):
-        os.remove(TEST_FILE)
+from src.file_saver import JSONSaver, CSVSaver
 
 
-def test_add_and_get_vacancy() -> None:
-    """
-    Проверяет добавление и получение вакансии через JSONSaver.
-    """
-    saver = JSONSaver(filename=TEST_FILE)
-    vacancy = Vacancy("Test", "http://test", 100000, "desc")
-    saver.add_vacancy(vacancy)
+@pytest.fixture
+def sample_vacancy() -> Vacancy:
+    """Создаёт пример объекта Vacancy для тестов."""
+    return Vacancy(
+        title="Python Developer",
+        url="https://hh.ru/vacancy/123",
+        salary=100000,
+        description="Разработка на Python"
+    )
+
+
+@pytest.fixture
+def temp_json_file() -> Generator[str, None, None]:
+    """Создаёт временный JSON-файл и удаляет его после теста."""
+    import tempfile
+    with tempfile.NamedTemporaryFile(mode='w+', suffix='.json', delete=False) as f:
+        filename = f.name
+    yield filename
+    if os.path.exists(filename):
+        os.remove(filename)
+
+
+@pytest.fixture
+def temp_csv_file() -> Generator[str, None, None]:
+    """Создаёт временный CSV-файл и удаляет его после теста."""
+    import tempfile
+    with tempfile.NamedTemporaryFile(mode='w+', suffix='.csv', delete=False) as f:
+        filename = f.name
+    yield filename
+    if os.path.exists(filename):
+        os.remove(filename)
+
+
+def test_json_saver_add_get_delete(sample_vacancy: Vacancy, temp_json_file: str) -> None:
+    """Тестирует добавление, получение и удаление вакансий в JSONSaver."""
+    saver = JSONSaver(filename=temp_json_file)
+
+    assert saver.get_vacancies() == []
+
+    saver.add_vacancy(sample_vacancy)
     vacancies = saver.get_vacancies()
     assert len(vacancies) == 1
-    assert vacancies[0].title == "Test"
-    assert vacancies[0].salary == 100000
+    assert vacancies[0].title == sample_vacancy.title
 
-
-def test_no_duplicate_vacancy() -> None:
-    """
-    Проверяет, что дублирующая вакансия не добавляется повторно.
-    """
-    saver = JSONSaver(filename=TEST_FILE)
-    vacancy = Vacancy("Test", "http://test", 100000, "desc")
-    saver.add_vacancy(vacancy)
-    saver.add_vacancy(vacancy)
+    saver.add_vacancy(sample_vacancy)  # дубликат не добавится
     vacancies = saver.get_vacancies()
     assert len(vacancies) == 1
 
+    saver.delete_vacancy(sample_vacancy)
+    assert saver.get_vacancies() == []
 
-def test_delete_vacancy() -> None:
-    """
-    Проверяет удаление вакансии из файла.
-    """
-    saver = JSONSaver(filename=TEST_FILE)
-    vacancy1 = Vacancy("Test1", "http://test1", 100000, "desc1")
-    vacancy2 = Vacancy("Test2", "http://test2", 200000, "desc2")
-    saver.add_vacancy(vacancy1)
-    saver.add_vacancy(vacancy2)
-    saver.delete_vacancy(vacancy1)
+
+def test_csv_saver_add_get_delete(sample_vacancy: Vacancy, temp_csv_file: str) -> None:
+    """Тестирует добавление, получение и удаление вакансий в CSVSaver."""
+    saver = CSVSaver(filename=temp_csv_file)
+
+    assert saver.get_vacancies() == []
+
+    saver.add_vacancy(sample_vacancy)
     vacancies = saver.get_vacancies()
     assert len(vacancies) == 1
-    assert vacancies[0].title == "Test2"
+    assert vacancies[0].title == sample_vacancy.title
 
-
-def test_get_vacancies_empty_file() -> None:
-    """
-    Проверяет, что при отсутствии файла возвращается пустой список вакансий.
-    """
-    saver = JSONSaver(filename=TEST_FILE)
+    saver.add_vacancy(sample_vacancy)  # дубликат не добавится
     vacancies = saver.get_vacancies()
-    assert vacancies == []
+    assert len(vacancies) == 1
+
+    saver.delete_vacancy(sample_vacancy)
+    assert saver.get_vacancies() == []

@@ -1,10 +1,11 @@
 import logging
 import os
 from dotenv import load_dotenv
+from typing import List
 
 from src.api import HeadHunterAPI
 from src.config import LOG_LEVEL, VACANCY_FILE, DEFAULT_PER_PAGE
-from src.file_saver import JSONSaver
+from src.file_saver import JSONSaver, VacancyFileSaver
 from src.csv_saver import CSVSaver
 from src.utils import (
     filter_vacancies,
@@ -24,8 +25,9 @@ class VacancySaver:
     """
     Универсальный класс для сохранения вакансий в JSON или CSV в зависимости от расширения файла.
     """
-    def __init__(self, filename: str):
+    def __init__(self, filename: str) -> None:
         self.filename = filename.lower()
+        self.saver: VacancyFileSaver  # объявляем тип один раз
         if self.filename.endswith('.json'):
             self.saver = JSONSaver(filename)
         elif self.filename.endswith('.csv'):
@@ -36,7 +38,7 @@ class VacancySaver:
     def add_vacancy(self, vacancy: Vacancy) -> None:
         self.saver.add_vacancy(vacancy)
 
-    def get_vacancies(self) -> list[Vacancy]:
+    def get_vacancies(self) -> List[Vacancy]:
         return self.saver.get_vacancies()
 
     def delete_vacancy(self, vacancy: Vacancy) -> None:
@@ -49,7 +51,7 @@ def user_interaction() -> None:
 
     hh_api = HeadHunterAPI()
     saver = VacancySaver(filename=vacancy_file)
-    vacancies_list = []
+    vacancies_list: List[Vacancy] = []
 
     while True:
         print("\nМеню:")
