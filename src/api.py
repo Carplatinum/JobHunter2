@@ -3,15 +3,16 @@ from typing import Any, Dict, List
 import requests
 from src.config import HH_API_URL
 
+
 class VacancyAPI(ABC):
     """
     Абстрактный класс для работы с API сервисов вакансий.
     """
 
     @abstractmethod
-    def __connect(self) -> None:
+    def _connect(self) -> None:
         """
-        Приватный метод для подключения к API.
+        Метод для подключения к API.
         """
         pass
 
@@ -21,6 +22,7 @@ class VacancyAPI(ABC):
         Получить вакансии по ключевому слову.
         """
         pass
+
 
 class HeadHunterAPI(VacancyAPI):
     """
@@ -32,9 +34,9 @@ class HeadHunterAPI(VacancyAPI):
     def __init__(self) -> None:
         self.__session = requests.Session()
 
-    def _VacancyAPI__connect(self) -> None:
+    def _connect(self) -> None:
         """
-        Приватный метод подключения к API hh.ru.
+        Метод подключения к API hh.ru.
         Отправляет тестовый запрос и проверяет статус ответа.
         """
         params: dict[str, str | int] = {'text': 'python', 'per_page': 1}
@@ -45,9 +47,9 @@ class HeadHunterAPI(VacancyAPI):
     def get_vacancies(self, keyword: str, per_page: int = 20) -> List[Dict[str, Any]]:
         """
         Получить список вакансий по ключевому слову с hh.ru.
-        Вызывает приватный метод подключения перед запросом.
+        Вызывает метод подключения перед запросом.
         """
-        self._VacancyAPI__connect()
+        self._connect()
         params: dict[str, str | int] = {
             'text': keyword,
             'per_page': per_page,
